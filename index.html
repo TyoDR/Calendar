@@ -1,323 +1,323 @@
-<html lang="fr">
-
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calendar</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+<title>TyoDR - Integrated Calendar</title>
+<style type="text/css" id="combined_stylesheet">
+  /* --- Impor Font Global --- */
+  @import url("https://fonts.googleapis.com/css?family=Electrolize");
+  /* Font Courier New (monospace) akan di-handle oleh style Kalender */
 
-    html {
-      font-size: 16px;
-    }
+  /* --- Gaya Global Utama & Reset dari Kalender --- */
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+  html {
+    font-size: 16px; /* Default, akan diubah oleh JS Kalender */
+  }
+  body {
+    background: #000 !important;
+    font-family: system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    position: relative; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0;
+  }
 
-    body {
-      background: #000;
-      color: #0f0;
-      font-family: 'Courier New', monospace;
-      height: 100vh;
-      overflow: hidden;
-      position: relative;
-    }
+  body::before { /* Efek Scanlines Global */
+    content: ""; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(0,255,0,0.3), rgba(0,255,0,0.3) 1px, transparent 1px, transparent 4px);
+    z-index: 10; opacity: 1; mix-blend-mode: overlay;
+  }
 
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none;
-      background: repeating-linear-gradient(0deg,
-          rgba(0, 255, 0, 0.3),
-          rgba(0, 255, 0, 0.3) 1px,
-          transparent 1px,
-          transparent 4px);
-      z-index: 10;
-      opacity: 1;
-      mix-blend-mode: overlay;
-    }
+  #matrixCanvas { /* Matrix Rain */
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
+  }
 
-    .container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100%;
-      position: relative;
-      z-index: 1;
-      padding: 1rem;
-    }
+  p#title { /* Judul "TyoDR" */
+    width: 90%; margin-top: 3vh; margin-bottom: 2vh; color: hsla(255,255%,255%,1);
+    font-size: clamp(1.8em, 5vw, 3.5em); letter-spacing: 2px;
+    font-family: 'Electrolize', sans-serif; text-align: center;
+    text-shadow:1px 1px hsla(255,255%,255%,.7),2px 2px hsla(255,255%,255%,.6),3px 3px hsla(255,255%,255%,.5),4px 4px hsla(255,255%,255%,.3),5px 5px hsla(255,255%,255%,.1);
+    position: relative; z-index: 2;
+  }
 
-    .ascii-border {
-      border: 2px double #0f0;
-      padding: 1rem;
-      position: relative;
-      background: rgba(0, 20, 0, 0.8);
-      width: 100%;
-      max-width: 800px;
-      border-radius: 20px 20px 20px 20px;
-      z-index: 2;
-    }
+  /* --- Gaya Marquee GitHub --- */
+  .git-contributions {
+    width: 95%; max-width: 510px; padding: 10px 8px 8px 8px;
+    border: solid 1px #3d444d; border-radius: 8px; background-color: #0e1116;
+    position: relative; z-index: 1; box-shadow: 0 0 10px hsla(120,50%,15%,0.4);
+    margin-bottom: 30px; display: flex; flex-direction: column; align-items: stretch;
+  }
+  .led-grid-wrapper {
+    overflow-x: auto; padding-bottom: 5px; border: 1px solid #2a3037;
+    border-radius: 3px; background-color: #080a0d;
+    -webkit-overflow-scrolling: touch; margin-bottom: 8px;
+  }
+  #led-container {}
+  .led-row { display: flex; white-space: nowrap; }
+  .led {
+    width: 6px; height: 6px; margin: 1.5px; border-radius: 20%;
+    background-color: #171c21; transition: background-color 0.1s ease-in-out;
+    flex-shrink: 0;
+  }
+  .led.on-1 { background-color: #1f432b; } .led.on-2 { background-color: #2e6b38; }
+  .led.on-3 { background-color: #52a44f; } .led.on-4 { background-color: #6cd064; }
+  .bottom-scale { display: flex; align-items: center; justify-content: flex-end; gap: 3px; padding-right: 5px; }
+  .bottom-scale p { margin: 0; color: #9198a1; font-size: 10px; }
+  .color-box { height: 8px; width: 8px; border-radius: 2px; }
+  .legend-1 { background-color: #171c21; } .legend-2 { background-color: #1f432b; }
+  .legend-3 { background-color: #2e6b38; } .legend-4 { background-color: #52a44f; }
+  .legend-5 { background-color: #6cd064; }
 
-    .title {
-      text-align: center;
-      margin-bottom: 1.5rem;
-      text-shadow: 0 0 10px #0f0;
-      animation: glitch 2s infinite;
-      font-size: 1.5rem;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      width: 100%;
-      display: block;
-      transform: scale(0.95);
-      max-width: 100%;
-      letter-spacing: -0.05em;
-    }
+  @media (max-width: 480px) { /* Media Queries Marquee */
+    .git-contributions { padding: 8px 5px 5px 5px; }
+    .led { width: 5px; height: 5px; margin: 1px; }
+    p#title { font-size: clamp(1.6em, 4.5vw, 3em); margin-bottom: 3vh; }
+  }
+  @media (max-width: 360px) {
+    p#title { font-size: clamp(1.5em, 4vw, 2.8em); letter-spacing: 1px; }
+  }
 
-    .calendar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 0.25rem;
-      margin: 1rem 0;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .calendar-header {
-      display: contents;
-    }
-
-    .calendar-header>div {
-      text-align: center;
-      font-weight: bold;
-      opacity: 0.7;
-      padding: 0.5rem;
-      background: rgba(0, 255, 0, 0.1);
-      font-size: 0.875rem;
-    }
-
-    .calendar-header>div:first-child {
-      border-top-left-radius: 15px;
-    }
-
-    .calendar-header>div:last-child {
-      border-top-right-radius: 15px;
-    }
-
-    .calendar-cell {
-      padding: 0.75rem;
-      text-align: center;
-      position: relative;
-      border: 1px solid rgba(0, 255, 0, 0.2);
-      transition: all 0.3s ease;
-      font-size: 1rem;
-    }
-
-    .calendar-cell:hover {
-      background: rgba(0, 255, 0, 0.1);
-      transform: scale(1.05);
-      z-index: 3;
-    }
-
-    .current-day {
-      color: #000;
-      background: #0f0;
-      font-weight: bold;
-      box-shadow: 0 0 15px #0f0;
-      animation: blink-current-day 1s infinite alternate;
-    }
-
-    #time {
-      display: flex;
-      flex-direction: column;
-      font-size: 1.25rem;
-      text-align: center;
-      margin-top: 1rem;
-      letter-spacing: 3px;
-      opacity: 0.8;
-    }
-
-    #time-display {
-      margin-bottom: 0.5rem;
-    }
-
-    #date-display {
-      font-size: 0.9rem;
-      opacity: 0.7;
-    }
-
-    .code-credit {
-      position: absolute;
-      bottom: 0.5rem;
-      right: 0.5rem;
-      font-size: 0.3rem;
-      opacity: 0.5;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      z-index: 3;
-    }
-
-    @media (max-width: 600px) {
-      html {
-        font-size: 14px;
-      }
-
-      .title {
-        font-size: 1.3rem;
-        transform: scale(0.9);
-      }
-
-      .calendar-cell {
-        padding: 0.5rem;
-      }
-    }
-
-    @media (max-width: 400px) {
-      html {
-        font-size: 12px;
-      }
-
-      .title {
-        font-size: 1.1rem;
-        transform: scale(0.85);
-      }
-
-      .calendar-cell {
-        padding: 0.25rem;
-      }
-    }
-
-    @keyframes glitch {
-      0% {
-        text-shadow: 3px 0 0 magenta;
-      }
-
-      25% {
-        transform: skew(5deg);
-      }
-
-      50% {
-        text-shadow: -3px 0 0 cyan;
-      }
-
-      75% {
-        transform: skew(-2deg);
-      }
-
-      100% {
-        text-shadow: 0 0 10px #0f0;
-      }
-    }
-
-    @keyframes blink-current-day {
-      0% {
-        background: #0f0;
-        color: #000;
-        transform: scale(1);
-      }
-
-      50% {
-        background: rgba(0, 255, 0, 0.5);
-        color: #0f0;
-        transform: scale(1.05);
-      }
-
-      100% {
-        background: #0f0;
-        color: #000;
-        transform: scale(1);
-      }
-    }
-  </style>
+  /* --- Gaya untuk Kalender ASCII BARU --- */
+  .calendar-section-wrapper {
+    display: flex; flex-direction: column; align-items: center;
+    position: relative; z-index: 1; padding: 1rem;
+    width: 90%; max-width: 800px; margin: 20px auto;
+    font-family: 'Courier New', monospace; color: #0f0; margin-bottom: 50px;
+  }
+  .ascii-border {
+    border: 2px double #0f0; padding: 1rem; position: relative;
+    background: rgba(0,20,0,0.8); width: 100%; border-radius: 20px; z-index: 2;
+  }
+  .calendar-title {
+    text-align: center; margin-bottom: 1.5rem; text-shadow: 0 0 10px #0f0;
+    animation: glitch 2s infinite; font-size: 1.5rem; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; width: 100%; display: block;
+    transform: scale(0.95); max-width: 100%; letter-spacing: -0.05em;
+  }
+  .calendar {
+    display: grid; grid-template-columns: repeat(7,1fr); gap: 0.25rem;
+    margin: 1rem 0; overflow: hidden; position: relative;
+  }
+  .calendar-header { display: contents; }
+  .calendar-header > div {
+    text-align: center; font-weight: bold; opacity: 0.7;
+    padding: 0.5rem; background: rgba(0,255,0,0.1); font-size: 0.875rem;
+  }
+  .calendar-header > div:first-child { border-top-left-radius: 15px; }
+  .calendar-header > div:last-child { border-top-right-radius: 15px; }
+  .calendar-cell {
+    padding: 0.75rem; text-align: center; position: relative;
+    border: 1px solid rgba(0,255,0,0.2); transition: all 0.3s ease; font-size: 1rem;
+  }
+  .calendar-cell:hover { background: rgba(0,255,0,0.1); transform: scale(1.05); z-index: 3; }
+  .current-day {
+    color: #000; background: #0f0; font-weight: bold; box-shadow: 0 0 15px #0f0;
+    animation: blink-current-day 1s infinite alternate;
+  }
+  #time {
+    display: flex; flex-direction: column; font-size: 1.25rem;
+    text-align: center; margin-top: 1rem; letter-spacing: 3px; opacity: 0.8;
+  }
+  #time-display { margin-bottom: 0.5rem; }
+  #date-display { font-size: 0.9rem; opacity: 0.7; }
+  .code-credit {
+    position: absolute; bottom: 0.5rem; right: 0.5rem; font-size: 0.3rem;
+    opacity: 0.5; text-transform: uppercase; letter-spacing: 2px; z-index: 3;
+  }
+  @media (max-width: 600px) { /* Media Queries Kalender */
+    .calendar-title { font-size: 1.3rem; transform: scale(0.9); }
+    .calendar-cell { padding: 0.5rem; }
+  }
+  @media (max-width: 400px) {
+    .calendar-title { font-size: 1.1rem; transform: scale(0.85); }
+    .calendar-cell { padding: 0.25rem; }
+  }
+  @keyframes glitch {
+    0% { text-shadow: 3px 0 0 magenta; } 25% { transform: skew(5deg); }
+    50% { text-shadow: -3px 0 0 cyan; } 75% { transform: skew(-2deg); }
+    100% { text-shadow: 0 0 10px #0f0; }
+  }
+  @keyframes blink-current-day {
+    0% { background: #0f0; color: #000; transform: scale(1); }
+    50% { background: rgba(0,255,0,0.5); color: #0f0; transform: scale(1.05); }
+    100% { background: #0f0; color: #000; transform: scale(1); }
+  }
+</style>
 </head>
-
 <body>
-  <div class="container">
+  <canvas id="matrixCanvas"></canvas>
+  <p id="title">TyoDR</p>
+
+  <div class="git-contributions">
+    <div class="led-grid-wrapper"> <div id="led-container"></div> </div>
+    <div class="bottom-scale">
+      <p>Less</p>
+      <div class="color-box legend-1"></div><div class="color-box legend-2"></div>
+      <div class="color-box legend-3"></div><div class="color-box legend-4"></div>
+      <div class="color-box legend-5"></div>
+      <p>More</p>
+    </div>
+  </div>
+
+  <div class="calendar-section-wrapper">
     <div class="ascii-border">
-      <h1 class="title">■ CALENDAR ■</h1>
+      <h1 class="calendar-title">■ CALENDAR ■</h1>
       <div id="calendar" class="calendar"></div>
-      <div id="time">
-        <div id="time-display"></div>
-        <div id="date-display"></div>
-      </div>
+      <div id="time"> <div id="time-display"></div> <div id="date-display"></div> </div>
       <div class="code-credit">369</div>
     </div>
   </div>
 
-  <script>
-    function getSystemLocale() {
-      return navigator.language || navigator.userLanguage || 'en-US';
-    }
+<script type="text/javascript">
+  // --- Logika Hujan Matrix --- (Sama seperti sebelumnya)
+  const matrixNode = document.getElementById('matrixCanvas'); /* ... kode lengkap matrix ... */
+  const matrixCtx = matrixNode.getContext('2d');
+  let w_matrix, h_matrix, cols_matrix, ypos_matrix;
+  function setupMatrix() { 
+    w_matrix = matrixNode.width = window.innerWidth; h_matrix = matrixNode.height = window.innerHeight;
+    cols_matrix = Math.floor(w_matrix / 20) + 1; ypos_matrix = Array(cols_matrix).fill(0);
+    matrixCtx.fillStyle = '#000'; matrixCtx.fillRect(0, 0, w_matrix, h_matrix);
+  }
+  setupMatrix();
+  const matrixChars = "アァカサタナハマヤャラワガザダバパイィキシチニヒミリヰギジヂビピウゥクスツヌフムユュルグズブヅプエェケセテネヘメレヱゲゼデベペオォコソトノホモヨョロヲゴゾドボポヴッン0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let matrixAnimationId;
+  function animateMatrix() {
+    matrixCtx.fillStyle = 'rgba(0,0,0,.05)'; matrixCtx.fillRect(0, 0, w_matrix, h_matrix);
+    matrixCtx.fillStyle = '#0F0'; matrixCtx.font = '15pt monospace';
+    ypos_matrix.forEach((y, ind) => {
+      const text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+      const x = ind * 20; matrixCtx.fillText(text, x, y);
+      if (y > 100 + Math.random() * 100000) ypos_matrix[ind] = 0; else ypos_matrix[ind] = y + 20;
+    });
+    matrixAnimationId = requestAnimationFrame(animateMatrix);
+  }
+  window.addEventListener('resize', () => { cancelAnimationFrame(matrixAnimationId); setupMatrix(); animateMatrix(); });
+  animateMatrix();
 
-    function updateCalendar() {
-      const systemLocale = getSystemLocale();
-      const now = new Date();
-      const dayAbbreviations = {
-        'fr': ['L', 'M', 'M', 'J', 'V', 'S', 'D'],
-        'en': ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
-        'es': ['D', 'L', 'M', 'X', 'J', 'V', 'S'],
-        'de': ['M', 'D', 'M', 'D', 'F', 'S', 'S'],
-        'zh': ['日', '一', '二', '三', '四', '五', '六'],
-        'th': ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
-        'ja': ['日', '月', '火', '水', '木', '金', '土'],
-        'ru': ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
-        'ar': ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'],
-        'hi': ['र', 'सो', 'मं', 'बु', 'गु', 'शु', 'श'],
-        'ko': ['일', '월', '화', '수', '목', '금', '토'],
-        'default': ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-      };
-      const localeKey = systemLocale.split('-')[0];
-      const localeDays = dayAbbreviations[localeKey] || dayAbbreviations['default'];
-      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-      const startDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
-      let calendarHTML = '<div class="calendar-header">';
-      localeDays.forEach(day =>
-        calendarHTML += `<div>${day}</div>`
-      );
-      calendarHTML += '</div>';
-      calendarHTML += Array.from({
-          length: (startDay || 7) - 1
-        }, () =>
-        '<div class="calendar-cell"></div>'
-      ).join('');
-      Array.from({
-        length: daysInMonth
-      }, (_, i) => {
-        const isCurrent = (i + 1) === now.getDate();
-        return `<div class="calendar-cell ${isCurrent ? 'current-day' : ''}">${i + 1}</div>`;
-      }).forEach(day => calendarHTML += day);
-      const calendar = document.getElementById('calendar');
-      calendar.innerHTML = calendarHTML;
-      const timeDisplay = document.getElementById('time-display');
-      const dateDisplay = document.getElementById('date-display');
-      timeDisplay.textContent = now.toLocaleTimeString(systemLocale, {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      }).toUpperCase();
-      dateDisplay.textContent = now.toLocaleDateString(systemLocale, {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-      });
-    }
+  // --- Logika Marquee Gaya GitHub ---
+  const containerLed = document.getElementById("led-container");
+  const ROWS_LED = 7; const COLS_LED = 50; const ledMatrix = [];
+  for (let i = 0; i < ROWS_LED; i++) { /* ... (kode pembuatan grid LED sama) ... */
+    const row = document.createElement("div"); row.className = "led-row"; ledMatrix[i] = [];
+    for (let j = 0; j < COLS_LED; j++) {
+      const led = document.createElement("div"); led.className = "led";
+      row.appendChild(led); ledMatrix[i][j] = led;
+    } containerLed.appendChild(row);
+  }
+  // Definisi Font LED disesuaikan dengan font asli GitHub style Anda (termasuk Y dan S)
+  const fontLed = {
+    A: [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+    B: [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0]],
+    C: [[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,1]],
+    D: [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0]],
+    E: [[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+    F: [[1,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
+    G: [[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,1,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    H: [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+    I: [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[1,1,1,1,1]],
+    J: [[0,0,0,1,1],[0,0,0,0,1],[0,0,0,0,1],[0,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    K: [[1,0,0,0,1],[1,0,0,1,0],[1,0,1,0,0],[1,1,0,0,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],
+    L: [[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+    M: [[1,0,0,0,1],[1,1,0,1,1],[1,0,1,0,1],[1,0,1,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+    N: [[1,0,0,0,1],[1,1,0,0,1],[1,0,1,0,1],[1,0,0,1,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1]],
+    O: [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    P: [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,0,0,0],[1,0,0,0,0],[1,0,0,0,0]],
+    Q: [[0,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,1,0,1],[1,0,0,1,0],[0,1,1,0,1]],
+    R: [[1,1,1,1,0],[1,0,0,0,1],[1,0,0,0,1],[1,1,1,1,0],[1,0,1,0,0],[1,0,0,1,0],[1,0,0,0,1]],
+    S: [[0,1,1,1,1],[1,0,0,0,0],[1,0,0,0,0],[0,1,1,1,0],[0,0,0,0,1],[0,0,0,0,1],[1,1,1,1,0]],
+    T: [[1,1,1,1,1],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+    U: [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,1,1,0]],
+    V: [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0]],
+    W: [[1,0,0,0,1],[1,0,0,0,1],[1,0,0,0,1],[1,0,1,0,1],[1,0,1,0,1],[1,1,0,1,1],[1,0,0,0,1]],
+    X: [[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,1,0,1,0],[1,0,0,0,1],[1,0,0,0,1]],
+    Y: [[1,0,0,0,1],[1,0,0,0,1],[0,1,0,1,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,1,0,0]],
+    Z: [[1,1,1,1,1],[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0],[1,1,1,1,1]],
+    "-":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[1,1,1,1,1],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]], // - dari user
+    " ":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]],
+    "0":[[1,1,1,1,1],[1,0,0,1,1],[1,0,0,1,1],[1,0,1,1,1],[1,1,1,0,1],[1,1,0,0,1],[1,1,1,1,1]], // 0 dari user
+    // Karakter tambahan jika diperlukan (misal . /) bisa ditambahkan di sini
+    ".":[[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0],[0,0,1,0,0],[0,0,1,0,0],[0,0,0,0,0]],
+    "/":[[0,0,0,0,1],[0,0,0,1,0],[0,0,1,0,0],[0,1,0,0,0],[1,0,0,0,0],[0,0,0,0,0],[0,0,0,0,0]]
+  };
+  function getTextMatrixLed(text) { /* ... (kode marquee sama) ... */
+    let matrix = Array(ROWS_LED).fill(null).map(() => []);
+    for (let char of text.toUpperCase()) {
+      const charData = fontLed[char] || fontLed[" "]; // Fallback ke spasi jika karakter tidak ada
+      for (let i = 0; i < ROWS_LED; i++) {
+        // Pastikan charData[i] ada sebelum concat, jika tidak, gunakan array kosong dengan panjang yang benar
+        const rowData = charData[i] || Array(5).fill(0);
+        matrix[i] = matrix[i].concat(rowData);
+        matrix[i].push(0); // Spasi antar karakter
+      }
+    } return matrix;
+  }
+  const classNamesLed = ["on-1", "on-2", "on-3", "on-4"];
+  let marqueeLedAnimationId;
+  function displayScrollingTextLed(text) { /* ... (kode marquee sama) ... */
+    const textMatrix = getTextMatrixLed(text + "   "); let startCol = 0; 
+    let lastUpdate = performance.now(); const scrollDelay = 120;
+    function updateDisplay() {
+      const now = performance.now();
+      if (now - lastUpdate >= scrollDelay) {
+        lastUpdate = now;
+        for (let i = 0; i < ROWS_LED; i++) {
+          for (let j = 0; j < COLS_LED; j++) {
+            const textCol = (startCol + j); let isOn = false;
+            if (textCol >= 0 && textMatrix[i] && textCol < textMatrix[i].length) { // Tambah pengecekan textMatrix[i]
+                isOn = textMatrix[i][textCol] === 1;
+            }
+            ledMatrix[i][j].classList.remove("on-1", "on-2", "on-3", "on-4");
+            if (isOn) {
+              const randomClass = classNamesLed[Math.floor(Math.random() * classNamesLed.length)];
+              ledMatrix[i][j].classList.add(randomClass);
+            } } }
+        startCol++; if (startCol > textMatrix[0].length) { startCol = -COLS_LED + 1; }
+      }
+      marqueeLedAnimationId = requestAnimationFrame(updateDisplay);
+    } updateDisplay();
+  }
+  displayScrollingTextLed("TYO-DR - ONE PIECE - ALWAYS BE POSITIVE - DREAM IT WISH IT DO IT - NEVER STOP DREAMING - NO PAIN NO GAIN - NOTHING IS IMPOSSIBLE - TRAIN SMART KEEP IT REAL - STAY FOCUSED");
 
-    function resize() {
-      const baseSize = Math.min(window.innerWidth, window.innerHeight);
-      document.documentElement.style.fontSize = `${baseSize / 40}px`;
-    }
-    resize();
-    updateCalendar();
-    setInterval(updateCalendar, 1000);
-    window.addEventListener('resize', resize);
-  </script>
-
-
-</body></html>
+  // --- Logika untuk Kalender ASCII BARU ---
+  function getSystemLocale() { return navigator.language || navigator.userLanguage || 'en-US'; }
+  function updateCalendar() { /* ... (kode Kalender sama, dengan penyesuaian locale 'id') ... */
+    const systemLocale = getSystemLocale(); const now = new Date();
+    const dayAbbreviations = {
+      'fr': ['L','M','M','J','V','S','D'],'en': ['S','M','T','W','T','F','S'],
+      'es': ['D','L','M','X','J','V','S'],'de': ['M','D','M','D','F','S','S'],
+      'zh': ['日','一','二','三','四','五','六'],'th': ['อา','จ','อ','พ','พฤ','ศ','ส'],
+      'ja': ['日','月','火','水','木','金','土'],'ru': ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'],
+      'ar': ['ح','ن','ث','ر','خ','ج','س'],'hi': ['र','सो','मं','बु','गु','शु','श'],
+      'ko': ['일','월','화','수','목','금','토'],'id': ['M','S','S','R','K','J','S'],
+      'default': ['S','M','T','W','T','F','S']};
+    const localeKey = systemLocale.split('-')[0]; const localeDays = dayAbbreviations[localeKey] || dayAbbreviations['default'];
+    const daysInMonth = new Date(now.getFullYear(),now.getMonth()+1,0).getDate();
+    let startDayIndex = new Date(now.getFullYear(),now.getMonth(),1).getDay();
+    if (['fr','de','id','ru'].includes(localeKey)) { startDayIndex = (startDayIndex === 0)?6:startDayIndex-1; }
+    let calendarHTML = '<div class="calendar-header">'; localeDays.forEach(day => calendarHTML+=`<div>${day}</div>`); calendarHTML+='</div>';
+    calendarHTML+=Array.from({length:startDayIndex},()=>'<div class="calendar-cell"></div>').join('');
+    Array.from({length:daysInMonth},(_,i)=>{ const isCurrent=(i+1)===now.getDate(); return `<div class="calendar-cell ${isCurrent?'current-day':''}">${i+1}</div>`;
+    }).forEach(day=>calendarHTML+=day);
+    const calendarEl = document.getElementById('calendar'); if(calendarEl) calendarEl.innerHTML = calendarHTML;
+    const timeDisplay = document.getElementById('time-display'); const dateDisplay = document.getElementById('date-display');
+    if(timeDisplay) timeDisplay.textContent = now.toLocaleTimeString(systemLocale,{hour:'2-digit',minute:'2-digit',second:'2-digit'}).toUpperCase();
+    if(dateDisplay) dateDisplay.textContent = now.toLocaleDateString(systemLocale,{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  }
+  function resizeCalendar() {
+    const baseSize = Math.min(window.innerWidth, window.innerHeight);
+    document.documentElement.style.fontSize = `${Math.max(10, baseSize / 50)}px`;
+  }
+  if (document.getElementById('calendar')) {
+    resizeCalendar(); updateCalendar(); setInterval(updateCalendar, 1000);
+    window.addEventListener('resize', resizeCalendar);
+  }
+</script>
+</body>
+</html>
