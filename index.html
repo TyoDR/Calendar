@@ -1,0 +1,323 @@
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calendar</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      font-size: 16px;
+    }
+
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: 'Courier New', monospace;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      background: repeating-linear-gradient(0deg,
+          rgba(0, 255, 0, 0.3),
+          rgba(0, 255, 0, 0.3) 1px,
+          transparent 1px,
+          transparent 4px);
+      z-index: 10;
+      opacity: 1;
+      mix-blend-mode: overlay;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      position: relative;
+      z-index: 1;
+      padding: 1rem;
+    }
+
+    .ascii-border {
+      border: 2px double #0f0;
+      padding: 1rem;
+      position: relative;
+      background: rgba(0, 20, 0, 0.8);
+      width: 100%;
+      max-width: 800px;
+      border-radius: 20px 20px 20px 20px;
+      z-index: 2;
+    }
+
+    .title {
+      text-align: center;
+      margin-bottom: 1.5rem;
+      text-shadow: 0 0 10px #0f0;
+      animation: glitch 2s infinite;
+      font-size: 1.5rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+      display: block;
+      transform: scale(0.95);
+      max-width: 100%;
+      letter-spacing: -0.05em;
+    }
+
+    .calendar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.25rem;
+      margin: 1rem 0;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .calendar-header {
+      display: contents;
+    }
+
+    .calendar-header>div {
+      text-align: center;
+      font-weight: bold;
+      opacity: 0.7;
+      padding: 0.5rem;
+      background: rgba(0, 255, 0, 0.1);
+      font-size: 0.875rem;
+    }
+
+    .calendar-header>div:first-child {
+      border-top-left-radius: 15px;
+    }
+
+    .calendar-header>div:last-child {
+      border-top-right-radius: 15px;
+    }
+
+    .calendar-cell {
+      padding: 0.75rem;
+      text-align: center;
+      position: relative;
+      border: 1px solid rgba(0, 255, 0, 0.2);
+      transition: all 0.3s ease;
+      font-size: 1rem;
+    }
+
+    .calendar-cell:hover {
+      background: rgba(0, 255, 0, 0.1);
+      transform: scale(1.05);
+      z-index: 3;
+    }
+
+    .current-day {
+      color: #000;
+      background: #0f0;
+      font-weight: bold;
+      box-shadow: 0 0 15px #0f0;
+      animation: blink-current-day 1s infinite alternate;
+    }
+
+    #time {
+      display: flex;
+      flex-direction: column;
+      font-size: 1.25rem;
+      text-align: center;
+      margin-top: 1rem;
+      letter-spacing: 3px;
+      opacity: 0.8;
+    }
+
+    #time-display {
+      margin-bottom: 0.5rem;
+    }
+
+    #date-display {
+      font-size: 0.9rem;
+      opacity: 0.7;
+    }
+
+    .code-credit {
+      position: absolute;
+      bottom: 0.5rem;
+      right: 0.5rem;
+      font-size: 0.3rem;
+      opacity: 0.5;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      z-index: 3;
+    }
+
+    @media (max-width: 600px) {
+      html {
+        font-size: 14px;
+      }
+
+      .title {
+        font-size: 1.3rem;
+        transform: scale(0.9);
+      }
+
+      .calendar-cell {
+        padding: 0.5rem;
+      }
+    }
+
+    @media (max-width: 400px) {
+      html {
+        font-size: 12px;
+      }
+
+      .title {
+        font-size: 1.1rem;
+        transform: scale(0.85);
+      }
+
+      .calendar-cell {
+        padding: 0.25rem;
+      }
+    }
+
+    @keyframes glitch {
+      0% {
+        text-shadow: 3px 0 0 magenta;
+      }
+
+      25% {
+        transform: skew(5deg);
+      }
+
+      50% {
+        text-shadow: -3px 0 0 cyan;
+      }
+
+      75% {
+        transform: skew(-2deg);
+      }
+
+      100% {
+        text-shadow: 0 0 10px #0f0;
+      }
+    }
+
+    @keyframes blink-current-day {
+      0% {
+        background: #0f0;
+        color: #000;
+        transform: scale(1);
+      }
+
+      50% {
+        background: rgba(0, 255, 0, 0.5);
+        color: #0f0;
+        transform: scale(1.05);
+      }
+
+      100% {
+        background: #0f0;
+        color: #000;
+        transform: scale(1);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <div class="ascii-border">
+      <h1 class="title">■ CALENDAR ■</h1>
+      <div id="calendar" class="calendar"></div>
+      <div id="time">
+        <div id="time-display"></div>
+        <div id="date-display"></div>
+      </div>
+      <div class="code-credit">369</div>
+    </div>
+  </div>
+
+  <script>
+    function getSystemLocale() {
+      return navigator.language || navigator.userLanguage || 'en-US';
+    }
+
+    function updateCalendar() {
+      const systemLocale = getSystemLocale();
+      const now = new Date();
+      const dayAbbreviations = {
+        'fr': ['L', 'M', 'M', 'J', 'V', 'S', 'D'],
+        'en': ['S', 'M', 'T', 'W', 'T', 'F', 'S'],
+        'es': ['D', 'L', 'M', 'X', 'J', 'V', 'S'],
+        'de': ['M', 'D', 'M', 'D', 'F', 'S', 'S'],
+        'zh': ['日', '一', '二', '三', '四', '五', '六'],
+        'th': ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส'],
+        'ja': ['日', '月', '火', '水', '木', '金', '土'],
+        'ru': ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+        'ar': ['ح', 'ن', 'ث', 'ر', 'خ', 'ج', 'س'],
+        'hi': ['र', 'सो', 'मं', 'बु', 'गु', 'शु', 'श'],
+        'ko': ['일', '월', '화', '수', '목', '금', '토'],
+        'default': ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+      };
+      const localeKey = systemLocale.split('-')[0];
+      const localeDays = dayAbbreviations[localeKey] || dayAbbreviations['default'];
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const startDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+      let calendarHTML = '<div class="calendar-header">';
+      localeDays.forEach(day =>
+        calendarHTML += `<div>${day}</div>`
+      );
+      calendarHTML += '</div>';
+      calendarHTML += Array.from({
+          length: (startDay || 7) - 1
+        }, () =>
+        '<div class="calendar-cell"></div>'
+      ).join('');
+      Array.from({
+        length: daysInMonth
+      }, (_, i) => {
+        const isCurrent = (i + 1) === now.getDate();
+        return `<div class="calendar-cell ${isCurrent ? 'current-day' : ''}">${i + 1}</div>`;
+      }).forEach(day => calendarHTML += day);
+      const calendar = document.getElementById('calendar');
+      calendar.innerHTML = calendarHTML;
+      const timeDisplay = document.getElementById('time-display');
+      const dateDisplay = document.getElementById('date-display');
+      timeDisplay.textContent = now.toLocaleTimeString(systemLocale, {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      }).toUpperCase();
+      dateDisplay.textContent = now.toLocaleDateString(systemLocale, {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+      });
+    }
+
+    function resize() {
+      const baseSize = Math.min(window.innerWidth, window.innerHeight);
+      document.documentElement.style.fontSize = `${baseSize / 40}px`;
+    }
+    resize();
+    updateCalendar();
+    setInterval(updateCalendar, 1000);
+    window.addEventListener('resize', resize);
+  </script>
+
+
+</body></html>
